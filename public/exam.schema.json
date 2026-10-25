@@ -1,0 +1,218 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Exam Time import schema",
+  "type": "object",
+  "required": ["schemaVersion", "title", "questions"],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "questions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/question"
+      }
+    }
+  },
+  "$defs": {
+    "option": {
+      "type": "object",
+      "required": ["id", "text"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        }
+      }
+    },
+    "question": {
+      "type": "object",
+      "required": ["id", "text", "type", "options", "correctAnswers"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S",
+          "description": "Must be unique across questions; JavaScript Object.prototype keys and prototype are reserved."
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "type": {
+          "enum": ["single", "multiple", "true_false"]
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/option"
+          }
+        },
+        "correctAnswers": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          },
+          "description": "Each id must reference a distinct existing option. Option ids must be unique within a question."
+        },
+        "explanation": {
+          "type": "string"
+        },
+        "table": {
+          "$ref": "#/$defs/table"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "single"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "options": {
+                "minItems": 4,
+                "maxItems": 4
+              },
+              "correctAnswers": {
+                "minItems": 1,
+                "maxItems": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "multiple"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "options": {
+                "minItems": 5,
+                "maxItems": 5
+              },
+              "correctAnswers": {
+                "minItems": 2,
+                "maxItems": 5
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "true_false"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "options": {
+                "minItems": 2,
+                "maxItems": 2,
+                "items": {
+                  "allOf": [
+                    {
+                      "$ref": "#/$defs/option"
+                    },
+                    {
+                      "properties": {
+                        "id": {
+                          "enum": ["true", "false"]
+                        }
+                      }
+                    }
+                  ]
+                },
+                "allOf": [
+                  {
+                    "contains": {
+                      "properties": {
+                        "id": {
+                          "const": "true"
+                        }
+                      },
+                      "required": ["id"]
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  },
+                  {
+                    "contains": {
+                      "properties": {
+                        "id": {
+                          "const": "false"
+                        }
+                      },
+                      "required": ["id"]
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  }
+                ]
+              },
+              "correctAnswers": {
+                "minItems": 1,
+                "maxItems": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "table": {
+      "type": "object",
+      "required": ["columns", "rows"],
+      "properties": {
+        "caption": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "columns": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
+          }
+        },
+        "rows": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": ["string", "number"]
+            }
+          }
+        }
+      },
+      "description": "Optional data table for any question type. Every row must have exactly as many cells as columns; the app validates this cross-field constraint. Cells are text or finite numbers."
+    }
+  }
+}
