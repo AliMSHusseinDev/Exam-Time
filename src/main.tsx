@@ -86,6 +86,7 @@ function App() {
   const [duration, setDuration] = useState("30");
   const [tab, setTab] = useState<"paste" | "guide">("paste");
   const [toast, setToast] = useState("");
+  const [copyText, setCopyText] = useState("");
   const [storageError, setStorageError] = useState(false);
   const [now, setNow] = useState(Date.now());
   const [modal, setModal] = useState<"submit" | "reset" | null>(null);
@@ -157,12 +158,30 @@ function App() {
   }, [modal]);
   async function copy(text: string) {
     try {
+      if (!navigator.clipboard?.writeText)
+        throw new Error("Clipboard unavailable");
       await navigator.clipboard.writeText(text);
       setToast("Copied! You’re ready for the next step.");
+      return;
     } catch {
-      setToast(
-        "Could not copy automatically. Select the text and copy it manually.",
-      );
+      // file:// clipboard support varies. Try the user-initiated local fallback,
+      // and always leave the full instructions available for manual copying.
+      const previous = document.activeElement as HTMLElement | null;
+      const field = document.createElement("textarea");
+      field.value = text;
+      field.style.cssText = "position:fixed;left:-9999px;top:0;opacity:0";
+      document.body.append(field);
+      field.select();
+      let copied = false;
+      try {
+        copied = document.execCommand("copy");
+      } catch {
+        /* Manual dialog below. */
+      }
+      field.remove();
+      previous?.focus();
+      if (copied) setToast("Copied! You’re ready for the next step.");
+      else setCopyText(text);
     }
   }
   function download(name: string, content: string) {
@@ -277,7 +296,7 @@ function App() {
                 Your questions. Your pace.
                 <br className="mobile" />
                 <span> Your exam.</span>
-                <span className="hero-asterisk">✳</span>
+                <span className="hero-asterisk">✳︎</span>
               </h1>
               <p>
                 Turn your questions into a real exam experience.
@@ -1043,6 +1062,54 @@ function App() {
           >
             <X size={15} />
           </button>
+        </div>
+      )}
+      {copyText && (
+        <div className="modal-backdrop" onClick={() => setCopyText("")}>
+          <section
+            className="modal copy-modal card"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="copy-title"
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") setCopyText("");
+              if (e.key === "Tab") {
+                const controls =
+                  e.currentTarget.querySelectorAll<HTMLElement>(
+                    "textarea, button",
+                  );
+                const first = controls[0],
+                  last = controls[controls.length - 1];
+                if (e.shiftKey && document.activeElement === first) {
+                  e.preventDefault();
+                  last.focus();
+                } else if (!e.shiftKey && document.activeElement === last) {
+                  e.preventDefault();
+                  first.focus();
+                }
+              }
+            }}
+          >
+            <h2 id="copy-title">Your AI instructions</h2>
+            <p>
+              Automatic copying is unavailable in this browser. The full text is
+              selected below. Press Ctrl+C (or ⌘C on Mac) to copy it.
+            </p>
+            <textarea
+              className="copy-text"
+              aria-label="AI instructions to copy"
+              readOnly
+              value={copyText}
+              autoFocus
+              onFocus={(e) => e.currentTarget.select()}
+            />
+            <div className="modal-actions">
+              <button className="secondary" onClick={() => setCopyText("")}>
+                Done
+              </button>
+            </div>
+          </section>
         </div>
       )}
       {modal && (

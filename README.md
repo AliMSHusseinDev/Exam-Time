@@ -1,6 +1,16 @@
 # Exam Time
 
-A personal exam simulator with an English interface. Import questions as JSON, set a duration, take the exam, and review your score and explanations afterward. The responsive layout supports desktop and mobile, including wide data tables inside questions.
+A personal exam simulator with an English interface. Import questions as JSON, set a duration, take the exam, and review your score and explanations afterward. The responsive midnight-dark interface uses clear system fonts, soft lavender accents, and readable data tables on desktop and mobile.
+
+## Open with a double-click — no installation
+
+1. Download this repository as a ZIP and extract it, or download the **raw** `index.html` from GitHub.
+2. Double-click the root **`index.html`** to open it in your browser.
+3. Import or paste your question JSON and start your exam.
+
+The root `index.html` is a complete, self-contained app. You can copy that one file to another folder or computer. It has its own JavaScript, styles, and favicon inside it; no server, Node.js, npm, internet connection, or accompanying asset folder is needed to use it. The same portable file is generated at `dist/index.html` when building.
+
+The UI stays in English. Fonts come from your operating system, so they work offline. Clipboard access and localStorage on local files vary by browser; there is a full-text manual copy dialog if copying is blocked, and a visible warning if progress cannot be saved. Keep the file in the same location to preserve access to browser-saved progress.
 
 ## Development
 
@@ -10,6 +20,8 @@ Requires Node.js 20.19+ (or 22.12+ for Node 22; tested on Node 24) and npm.
 npm ci --cache /tmp/exam-time-npm
 npm run dev
 ```
+
+Developers edit `src/` and `app.html`. The development server serves `app.html` with hot reload. Run `npm run build` after source changes to regenerate the portable root `index.html`; do not edit the generated file directly.
 
 ```sh
 npm run build
@@ -102,8 +114,12 @@ The interface, validation messages, AI instructions, and built-in examples are E
 
 The current attempt, including questions and answers, is saved in this browser's localStorage. Refreshing does not reset the timer: the absolute deadline keeps advancing even when the tab is closed. Returning after the deadline automatically finishes the exam. If browser storage is unavailable, a visible warning asks you to remain on the page. Starting a fresh exam removes the previous attempt; download results first to keep a copy.
 
-This is a personal practice tool, not a proctored or secure assessment platform. Answers are hidden in the exam interface, but remain in the imported data and browser storage. No accounts, backend services, database, or API keys are required. The optional Inter font is loaded from Google Fonts, with a system fallback.
+This is a personal practice tool, not a proctored or secure assessment platform. Answers are hidden in the exam interface, but remain in the imported data and browser storage. No accounts, backend services, database, or API keys are required. System fonts are used, with no remote font requests or external assets.
 
 ## Validation
 
 Built with React, TypeScript, Vite, and Lucide icons. Unit tests cover schema validation, table validation, backward compatibility, grading, and timer calculations. Playwright tests exercise imports, all answer types, refresh persistence, real timer expiry, review, table export and retake, mobile overflow, and safe text rendering.
+
+### Portable artifact checks
+
+Browser tests also exercise the exact standalone HTML copied on its own into a temporary folder: exam completion, tables, refresh persistence, file import, template/result downloads, and clipboard fallback, with external network access disabled. A separate test navigates directly to `file://`. In managed cloud Chromium, administrator policy blocks that scheme; only that direct-navigation test is explicitly skipped. The remaining standalone tests use a locally fulfilled HTTP document containing the same single file, without source or asset dependencies. A successful HTTP artifact test does not claim that this administrator restriction was removed.
